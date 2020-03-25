@@ -101,7 +101,7 @@ namespace RazorReact.Core
                 Formatting = Formatting.Indented
             };
 
-            return JsonConvert.SerializeObject(props);
+            return JsonConvert.SerializeObject(props, serializerSettings);
         }
 
         public string GetServerSideRenderedHtml(string componentName, object props = null, RazorReactOptions razorReactOptions = null)
