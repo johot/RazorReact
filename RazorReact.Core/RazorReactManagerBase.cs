@@ -5,9 +5,9 @@ using JavaScriptEngineSwitcher.ChakraCore;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Net.Http;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace RazorReact.Core
 {
@@ -20,17 +20,18 @@ namespace RazorReact.Core
         private IJsEngine _jsEngine;
         private readonly IServerPathMapper _mapServerPath;
 
-        protected RazorReactManagerBase(IEnumerable<ReactBundle> reactBundles, IServerPathMapper mapServerPath)
+        protected RazorReactManagerBase(IEnumerable<ReactBundle> reactBundles, IServerPathMapper mapServerPath, IJsEngine jsEngine)
         {
             _mapServerPath = mapServerPath;
 
             ReactBundles = reactBundles;
 
             // TODO: JsPool
-            JsEngineSwitcher.Current.DefaultEngineName = ChakraCoreJsEngine.EngineName; // V8JsEngine.EngineName;
-            JsEngineSwitcher.Current.EngineFactories.AddChakraCore(); //.AddV8();
+            //JsEngineSwitcher.Current.DefaultEngineName = ChakraCoreJsEngine.EngineName; // V8JsEngine.EngineName;
+            //JsEngineSwitcher.Current.EngineFactories.AddChakraCore(); //.AddV8();
+            //JsEngineSwitcher.Current.CreateDefaultEngine();
 
-            _jsEngine = JsEngineSwitcher.Current.CreateDefaultEngine();
+            _jsEngine = jsEngine;
 
             // Execute each bundle
             foreach (var reactBundle in ReactBundles)
@@ -41,7 +42,10 @@ namespace RazorReact.Core
                     {
                         var contents = new HttpClient().GetStringAsync(reactBundleFile).Result;
 
-                        _jsEngine.Execute(contents);
+                        _jsEngine.Evaluate(contents);
+
+                        //var newCode = _jsEngine.Precompile(contents);
+                        //_jsEngine.Execute(newCode);
                     }
                     else
                     {
@@ -64,7 +68,16 @@ namespace RazorReact.Core
 
             var reactBundle = ReactBundles.First();
 
-            return $"<script src=\"{reactBundle.BundleFiles.First().Replace("~", "")}\"></script>\n<script>ReactDOM.hydrate(React.createElement({componentName}, {propsAsString}), document.getElementById(\"{id}\"))</script>";
+            var scriptTag = new StringBuilder();
+
+            foreach (var bundleFile in reactBundle.BundleFiles)
+            {
+                scriptTag.AppendLine($"<script src=\"{bundleFile.Replace("~", "")}\"></script>");
+            }
+
+            scriptTag.AppendLine($"<script>ReactDOM.hydrate(React.createElement({componentName}, {propsAsString}), document.getElementById(\"{id}\"))</script>");
+
+            return scriptTag.ToString();
         }
 
         private string GetContainerId(string userSupplidId, string componentName)
@@ -82,7 +95,13 @@ namespace RazorReact.Core
             if (props == null)
                 return null;
 
-            return JsonSerializer.Serialize(props);
+            var serializerSettings = new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                Formatting = Formatting.Indented
+            };
+
+            return JsonConvert.SerializeObject(props);
         }
 
         public string GetServerSideRenderedHtml(string componentName, object props = null, RazorReactOptions razorReactOptions = null)
@@ -107,8 +126,13 @@ namespace RazorReact.Core
                 {
                     var outputHtml = new StringBuilder();
                     outputHtml.Append($"<div id=\"{id}\">");
-                    var ssrHtml = _jsEngine.Evaluate($"ReactDOMServer.renderToString(React.createElement({componentName}, {propsAsString}))");
-                    outputHtml.Append(ssrHtml.ToString());
+
+                    if (options.ServerSide)
+                    {
+                        var ssrHtml = _jsEngine.Evaluate($"ReactDOMServer.renderToString(React.createElement({componentName}, {propsAsString}))");
+                        outputHtml.Append(ssrHtml.ToString());
+                    }
+
                     outputHtml.Append("</div>");
 
                     var finalHtml = outputHtml.ToString();
