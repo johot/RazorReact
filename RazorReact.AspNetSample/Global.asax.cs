@@ -19,18 +19,24 @@ namespace RazorReact.AspNetSample
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
 
+            InitializeRazorReact();
+        }
+
+        private static void InitializeRazorReact()
+        {
             //var reactBundle = new ReactBundle(@"~\ReactScripts\main.bundle.js");
-            var reactBundle = new ReactBundle(new[] { @"http://localhost:5000/main.bundle.js", @"http://localhost:5000/runtime.bundle.js", @"http://localhost:5000/vendor.bundle.js", });
+            var reactBundle = new ReactBundle(null, new[] { @"http://localhost:5000/main.bundle.js", @"http://localhost:5000/runtime.bundle.js", @"http://localhost:5000/vendors~main.bundle.js", });
 
-            JsEngineSwitcher.Current.DefaultEngineName = ChakraCoreJsEngine.EngineName; // V8JsEngine.EngineName;
-            JsEngineSwitcher.Current.EngineFactories.AddChakraCore(); //.AddV8();  
+            //JsEngineSwitcher.Current.DefaultEngineName = ChakraCoreJsEngine.EngineName; // V8JsEngine.EngineName;
+            //JsEngineSwitcher.Current.EngineFactories.AddChakraCore(); //.AddV8();  
 
-            //JsEngineSwitcher.Current.DefaultEngineName = V8JsEngine.EngineName;
-            //JsEngineSwitcher.Current.EngineFactories.AddV8();
+            JsEngineSwitcher.Current.DefaultEngineName = V8JsEngine.EngineName;
+            JsEngineSwitcher.Current.EngineFactories.AddV8();
 
             var jsEngine = JsEngineSwitcher.Current.CreateDefaultEngine();
 
-            RazorReactManager.Initialize(reactBundle, jsEngine);
+            RazorReactConfiguration.AddReactManager(new RazorReactManager(reactBundle, new ChakraCoreJsEngineFactory(), new RazorReactOptions() { LiveReloadDevMode=true }));
+            RazorReactConfiguration.Initialize();
         }
     }
 }

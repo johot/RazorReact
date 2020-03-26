@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using System.Text.RegularExpressions;
 
 namespace RazorReact.Core
 {
@@ -15,64 +16,75 @@ namespace RazorReact.Core
     {
         private ObjectCache cache = MemoryCache.Default;
 
-        public IEnumerable<ReactBundle> ReactBundles { get; }
+        public ReactBundle ReactBundle { get; }
+        public RazorReactOptions Options { get; } = new RazorReactOptions();
 
         private IJsEngine _jsEngine;
+        private IJsEngineFactory _jsEngineFactory;
+
         private readonly IServerPathMapper _mapServerPath;
 
-        protected RazorReactManagerBase(IEnumerable<ReactBundle> reactBundles, IServerPathMapper mapServerPath, IJsEngine jsEngine)
+        protected RazorReactManagerBase(ReactBundle reactBundle, IServerPathMapper mapServerPath, IJsEngineFactory jsEngineFactory, RazorReactOptions options = null)
         {
+            if (options != null)
+            {
+                Options = options;
+            }
+
+            _jsEngineFactory = jsEngineFactory;
+
             _mapServerPath = mapServerPath;
 
-            ReactBundles = reactBundles;
+            ReactBundle = reactBundle;
 
             // TODO: JsPool
             //JsEngineSwitcher.Current.DefaultEngineName = ChakraCoreJsEngine.EngineName; // V8JsEngine.EngineName;
             //JsEngineSwitcher.Current.EngineFactories.AddChakraCore(); //.AddV8();
             //JsEngineSwitcher.Current.CreateDefaultEngine();
+        }
 
-            _jsEngine = jsEngine;
+        public void Initialize()
+        {
+            _jsEngine = _jsEngineFactory.CreateEngine();
 
             // Execute each bundle
-            foreach (var reactBundle in ReactBundles)
+            foreach (var reactBundleFile in ReactBundle.BundleFiles)
             {
-                foreach (var reactBundleFile in reactBundle.BundleFiles)
+                // Fix console is undefined errors
+                _jsEngine.Evaluate("if (typeof console === 'undefined') console = { log: function() {}, error: function() {} };");
+
+                if (reactBundleFile.ToLowerInvariant().StartsWith("http"))
                 {
-                    if (reactBundleFile.ToLowerInvariant().StartsWith("http"))
-                    {
-                        var contents = new HttpClient().GetStringAsync(reactBundleFile).Result;
+                    var contents = new HttpClient().GetStringAsync(reactBundleFile).Result;
 
-                        _jsEngine.Evaluate(contents);
+                    _jsEngine.Evaluate(contents);
 
-                        //var newCode = _jsEngine.Precompile(contents);
-                        //_jsEngine.Execute(newCode);
-                    }
-                    else
-                    {
-                        _jsEngine.ExecuteFile(_mapServerPath.MapServerPath(reactBundleFile), null);
-                    }
+                    //var newCode = _jsEngine.Precompile(contents);
+                    //_jsEngine.Execute(newCode);
+                }
+                else
+                {
+                    _jsEngine.ExecuteFile(_mapServerPath.MapServerPath(reactBundleFile), null);
                 }
             }
         }
 
-        public string GetClientSideRenderScripts(string componentName, object props = null, RazorReactOptions razorReactOptions = null)
+        public string GetClientSideRenderScripts(string componentName, object props, string bundleId = null, string containerId = null)
         {
-            var options = razorReactOptions == null ? new RazorReactOptions() : razorReactOptions;
-
-            if (!options.ClientSide)
+            if (!Options.ClientSide)
                 return $"<!-- Client side rendering disabled for: {componentName} -->";
 
             var propsAsString = GetPropsAsStringOrNull(props);
 
-            var id = GetContainerId(options?.ContainerId, componentName);
-
-            var reactBundle = ReactBundles.First();
+            var id = GetContainerId(containerId, componentName);
 
             var scriptTag = new StringBuilder();
 
-            foreach (var bundleFile in reactBundle.BundleFiles)
+            foreach (var bundleFile in ReactBundle.BundleFiles)
             {
-                scriptTag.AppendLine($"<script src=\"{bundleFile.Replace("~", "")}\"></script>");
+                // Remove start ~ character (used in ASP.NET)
+                var scriptSrc = Regex.Replace(bundleFile, "^~", "");
+                scriptTag.AppendLine($"<script src=\"{scriptSrc}\"></script>");
             }
 
             scriptTag.AppendLine($"<script>ReactDOM.hydrate(React.createElement({componentName}, {propsAsString}), document.getElementById(\"{id}\"))</script>");
@@ -104,58 +116,62 @@ namespace RazorReact.Core
             return JsonConvert.SerializeObject(props, serializerSettings);
         }
 
-        public string GetServerSideRenderedHtml(string componentName, object props = null, RazorReactOptions razorReactOptions = null)
+        public string GetServerSideRenderedHtml(string componentName, object props, string bundleId = null, string containerId = null)
         {
-            var options = razorReactOptions == null ? new RazorReactOptions() : razorReactOptions;
+            var comments = new StringBuilder();
 
-            var id = GetContainerId(options.ContainerId, componentName);
+            // For live reload dev mode reset everything each render
+            if (Options.LiveReloadDevMode)
+            {
+                Initialize();
+                Options.CacheRendering = false;
+
+                comments.AppendLine("<!-- Live reload dev mode enabled, performance will be lower -->");
+            }
+
+            var id = GetContainerId(containerId, componentName);
             var propsAsString = GetPropsAsStringOrNull(props);
 
             var cacheKey = $"{id}-{propsAsString}";
 
-            try
+            object html = null;
+
+            if (Options.CacheRendering)
             {
-                object html = null;
-
-                if (options.CacheRendering)
-                {
-                    html = cache[cacheKey];
-                }
-
-                if (html == null)
-                {
-                    var outputHtml = new StringBuilder();
-                    outputHtml.Append($"<div id=\"{id}\">");
-
-                    if (options.ServerSide)
-                    {
-                        var ssrHtml = _jsEngine.Evaluate($"ReactDOMServer.renderToString(React.createElement({componentName}, {propsAsString}))");
-                        outputHtml.Append(ssrHtml.ToString());
-                    }
-
-                    outputHtml.Append("</div>");
-
-                    var finalHtml = outputHtml.ToString();
-
-                    // Set cached rendering if enabled (default enabled)
-                    if (options.CacheRendering)
-                    {
-                        cache.Set(cacheKey, finalHtml, new CacheItemPolicy());
-                    }
-
-                    return finalHtml;
-                }
-                else
-                {
-                    // Cached version
-                    return $"<!-- Rendering cached: {componentName} -->" + html.ToString();
-                }
+                html = cache[cacheKey];
             }
-            catch (Exception ex)
-            {
 
-                return ex.ToString();
+            if (html == null)
+            {
+                var outputHtml = new StringBuilder();
+                outputHtml.Append($"<div id=\"{id}\">");
+
+                if (Options.ServerSide)
+                {
+                    var ssrHtml = _jsEngine.Evaluate($"ReactDOMServer.renderToString(React.createElement({componentName}, {propsAsString}))");
+                    outputHtml.Append(ssrHtml.ToString());
+                }
+
+                outputHtml.Append("</div>");
+
+                var finalHtml = outputHtml.ToString();
+
+                // Set cached rendering if enabled (default enabled)
+                if (Options.CacheRendering)
+                {
+                    cache.Set(cacheKey, finalHtml, new CacheItemPolicy());
+                }
+
+                return comments.ToString() + finalHtml;
+            }
+            else
+            {
+                comments.AppendLine($"<!-- Rendering cached: {componentName} -->");
+
+                // Cached version
+                return comments.ToString() + html.ToString();
             }
         }
+
     }
 }

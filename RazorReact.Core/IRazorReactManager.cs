@@ -4,9 +4,11 @@ namespace RazorReact.Core
 {
     public interface IRazorReactManager
     {
-        IEnumerable<ReactBundle> ReactBundles { get; }
+        ReactBundle ReactBundle { get; }
 
-        string GetClientSideRenderScripts(string componentName, object props = null, RazorReactOptions razorReactOptions = null);
-        string GetServerSideRenderedHtml(string componentName, object props = null, RazorReactOptions razorReactOptions = null);
+        string GetClientSideRenderScripts(string componentName, object props, string bundleId = null, string containerId = null);
+        string GetServerSideRenderedHtml(string componentName, object props, string bundleId = null, string containerId = null);
+
+        void Initialize();
     }
 }
