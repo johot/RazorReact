@@ -20,5 +20,11 @@ namespace RazorReact.Core
             this.BundleId = bundleId;
             this.BundleFiles = bundleFiles;
         }
+
+        public ReactBundle(IEnumerable<string> bundleFiles)
+        {
+            this.BundleId = null;
+            this.BundleFiles = bundleFiles;
+        }
     }
 }
