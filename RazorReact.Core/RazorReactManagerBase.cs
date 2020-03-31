@@ -12,6 +12,13 @@ using System.Text.RegularExpressions;
 
 namespace RazorReact.Core
 {
+    public class EmotionSSRData
+    {
+        public string Html { get; set; }
+        public string Css { get; set; }
+        public IEnumerable<string> Ids { get; set; }
+    }
+
     public abstract class RazorReactManagerBase : IRazorReactManager
     {
         private ObjectCache cache = MemoryCache.Default;
@@ -69,9 +76,11 @@ namespace RazorReact.Core
             }
         }
 
-        public string GetClientSideRenderScripts(string componentName, object props, string bundleId = null, string containerId = null)
+        public string GetClientSideRenderScripts(string componentName, object props, string bundleId = null, string containerId = null, RazorReactOptions options = null)
         {
-            if (!Options.ClientSide)
+            var usedOptions = options != null ? options : Options;
+
+            if (!usedOptions.ClientSide)
                 return $"<!-- Client side rendering disabled for: {componentName} -->";
 
             var propsAsString = GetPropsAsStringOrNull(props);
@@ -116,15 +125,17 @@ namespace RazorReact.Core
             return JsonConvert.SerializeObject(props, serializerSettings);
         }
 
-        public string GetServerSideRenderedHtml(string componentName, object props, string bundleId = null, string containerId = null)
+        public string GetServerSideRenderedHtml(string componentName, object props, string bundleId = null, string containerId = null, RazorReactOptions options = null)
         {
+            var usedOptions = options != null ? options : Options;
+
             var comments = new StringBuilder();
 
             // For live reload dev mode reset everything each render
-            if (Options.LiveReloadDevMode)
+            if (usedOptions.LiveReloadDevMode)
             {
                 Initialize();
-                Options.CacheRendering = false;
+                usedOptions.CacheRendering = false;
 
                 comments.AppendLine("<!-- Live reload dev mode enabled, performance will be lower -->");
             }
@@ -136,7 +147,7 @@ namespace RazorReact.Core
 
             object html = null;
 
-            if (Options.CacheRendering)
+            if (usedOptions.CacheRendering)
             {
                 html = cache[cacheKey];
             }
@@ -146,9 +157,24 @@ namespace RazorReact.Core
                 var outputHtml = new StringBuilder();
                 outputHtml.Append($"<div id=\"{id}\">");
 
-                if (Options.ServerSide)
+                if (usedOptions.ServerSide)
                 {
-                    var ssrHtml = _jsEngine.Evaluate($"ReactDOMServer.renderToString(React.createElement({componentName}, {propsAsString}))");
+                    var ssrHtml = "";
+                    //var useEmotion = false;
+                    var createElementJs = $"React.createElement({componentName}, {propsAsString})";
+
+                    //if (useEmotion)
+                    //{
+                    //    var emotionDataJson = _jsEngine.Evaluate($"emotionExtractCritical({createElementJs})");
+                    //    var emotionData = JsonConvert.DeserializeObject<EmotionSSRData>(emotionDataJson.ToString());
+                    //    var emotionStyleTag = $"<style data-emotion-css=\"{string.Join(" ", emotionData.Ids)}\">{emotionData.Css}</style>";
+                    //    ssrHtml = emotionStyleTag + emotionData.Html;
+                    //}
+                    //else
+                    //{
+                    ssrHtml = _jsEngine.Evaluate($"ReactDOMServer.renderToString({createElementJs})").ToString();
+                    //}
+
                     outputHtml.Append(ssrHtml.ToString());
                 }
 
@@ -157,7 +183,7 @@ namespace RazorReact.Core
                 var finalHtml = outputHtml.ToString();
 
                 // Set cached rendering if enabled (default enabled)
-                if (Options.CacheRendering)
+                if (usedOptions.CacheRendering)
                 {
                     cache.Set(cacheKey, finalHtml, new CacheItemPolicy());
                 }

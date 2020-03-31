@@ -18,7 +18,11 @@
             <p>&copy; @DateTime.Now.Year - My ASP.NET Application</p>
         </footer>
     </div>
-    @Html.RazorReact("StartPage", new { heroText = "<h1>Hero text!</h1>" })
+    @Html.RazorReact("ProductHeroWithSampleProps", new { heroText = "<h1>Hero text!</h1>" }, null, null, new RazorReactOptions()
+    {
+        LiveReloadDevMode = true,
+        ClientSide = true
+    })
 
     @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/bootstrap")

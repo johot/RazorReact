@@ -27,15 +27,7 @@ namespace RazorReact.AspNetSample
             //var reactBundle = new ReactBundle(@"~\ReactScripts\main.bundle.js");
             var reactBundle = new ReactBundle(null, new[] { @"http://localhost:5000/main.bundle.js", @"http://localhost:5000/runtime.bundle.js", @"http://localhost:5000/vendors~main.bundle.js", });
 
-            //JsEngineSwitcher.Current.DefaultEngineName = ChakraCoreJsEngine.EngineName; // V8JsEngine.EngineName;
-            //JsEngineSwitcher.Current.EngineFactories.AddChakraCore(); //.AddV8();  
-
-            JsEngineSwitcher.Current.DefaultEngineName = V8JsEngine.EngineName;
-            JsEngineSwitcher.Current.EngineFactories.AddV8();
-
-            var jsEngine = JsEngineSwitcher.Current.CreateDefaultEngine();
-
-            RazorReactConfiguration.AddReactManager(new RazorReactManager(reactBundle, new ChakraCoreJsEngineFactory(), new RazorReactOptions() { LiveReloadDevMode=true }));
+            RazorReactConfiguration.AddReactManager(new RazorReactManager(reactBundle, new ChakraCoreJsEngineFactory(), new RazorReactOptions() { LiveReloadDevMode = true }));
             RazorReactConfiguration.Initialize();
         }
     }

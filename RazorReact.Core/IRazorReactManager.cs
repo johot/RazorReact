@@ -6,8 +6,8 @@ namespace RazorReact.Core
     {
         ReactBundle ReactBundle { get; }
 
-        string GetClientSideRenderScripts(string componentName, object props, string bundleId = null, string containerId = null);
-        string GetServerSideRenderedHtml(string componentName, object props, string bundleId = null, string containerId = null);
+        string GetClientSideRenderScripts(string componentName, object props, string bundleId = null, string containerId = null, RazorReactOptions options = null);
+        string GetServerSideRenderedHtml(string componentName, object props, string bundleId = null, string containerId = null, RazorReactOptions options = null);
 
         void Initialize();
     }
