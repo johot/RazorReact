@@ -23,7 +23,9 @@ namespace RazorReact.Core
     {
         private ObjectCache cache = MemoryCache.Default;
 
-        public ReactBundle ReactBundle { get; }
+        public ReactBundle ReactServerSideBundle { get; }
+        public ReactBundle ReactClientSideBundle { get; }
+
         public RazorReactOptions Options { get; } = new RazorReactOptions();
 
         private IJsEngine _jsEngine;
@@ -31,7 +33,7 @@ namespace RazorReact.Core
 
         private readonly IServerPathMapper _mapServerPath;
 
-        protected RazorReactManagerBase(ReactBundle reactBundle, IServerPathMapper mapServerPath, IJsEngineFactory jsEngineFactory, RazorReactOptions options = null)
+        protected RazorReactManagerBase(ReactBundle reactServerSideBundle, ReactBundle reactClientSideBundle, IServerPathMapper mapServerPath, IJsEngineFactory jsEngineFactory, RazorReactOptions options = null)
         {
             if (options != null)
             {
@@ -42,7 +44,8 @@ namespace RazorReact.Core
 
             _mapServerPath = mapServerPath;
 
-            ReactBundle = reactBundle;
+            ReactServerSideBundle = reactServerSideBundle;
+            ReactClientSideBundle = reactClientSideBundle;
 
             // TODO: JsPool
             //JsEngineSwitcher.Current.DefaultEngineName = ChakraCoreJsEngine.EngineName; // V8JsEngine.EngineName;
@@ -55,7 +58,7 @@ namespace RazorReact.Core
             _jsEngine = _jsEngineFactory.CreateEngine();
 
             // Execute each bundle
-            foreach (var reactBundleFile in ReactBundle.BundleFiles)
+            foreach (var reactBundleFile in ReactServerSideBundle.BundleFiles)
             {
                 // Fix console is undefined errors
                 _jsEngine.Evaluate("if (typeof console === 'undefined') console = { log: function() {}, error: function() {} };");
@@ -89,7 +92,7 @@ namespace RazorReact.Core
 
             var scriptTag = new StringBuilder();
 
-            foreach (var bundleFile in ReactBundle.BundleFiles)
+            foreach (var bundleFile in ReactClientSideBundle.BundleFiles)
             {
                 // Remove start ~ character (used in ASP.NET)
                 var scriptSrc = Regex.Replace(bundleFile, "^~", "");
