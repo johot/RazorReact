@@ -1,6 +1,7 @@
 ﻿@{
     ViewBag.Title = "Home Page";
 }
+@using RazorReact.Core
 
 <div class="jumbotron">
     <h1>ASP.NET</h1>
@@ -9,6 +10,12 @@
 </div>
 
 <div class="row">
+@Html.RazorReact("MySampleComponent", new { message = "Hello from C#!" }, null, null, new RazorReactOptions()
+{
+    LiveReloadDevMode = true,
+    ClientSide = true
+})
+
     <div class="col-md-4">
         <h2>Getting started</h2>
         <p>

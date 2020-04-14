@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.js": "/Scripts/react/server/main.bundle.js",
+    "runtime.js": "/Scripts/react/server/runtime.bundle.js",
+    "vendors~main.js": "/Scripts/react/server/vendors~main.bundle.js",
+    "logo.svg": "/Scripts/react/server/5d5d9eefa31e5e13a6610d9fa7a283bb.svg"
+  },
+  "entrypoints": [
+    "/Scripts/react/server/main.bundle.js",
+    "/Scripts/react/server/runtime.bundle.js",
+    "/Scripts/react/server/vendors~main.bundle.js"
+  ]
+}

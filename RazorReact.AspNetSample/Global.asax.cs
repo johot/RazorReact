@@ -3,6 +3,7 @@ using JavaScriptEngineSwitcher.Core;
 using JavaScriptEngineSwitcher.V8;
 using RazorReact.AspNet;
 using RazorReact.Core;
+using System.IO;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Optimization;
@@ -25,9 +26,14 @@ namespace RazorReact.AspNetSample
         private static void InitializeRazorReact()
         {
             //var reactBundle = new ReactBundle(@"~\ReactScripts\main.bundle.js");
-            var reactBundle = new ReactBundle(null, new[] { @"http://localhost:5000/main.bundle.js", @"http://localhost:5000/runtime.bundle.js", @"http://localhost:5000/vendors~main.bundle.js", });
+            var distPath = Path.GetFullPath(Path.Combine(HttpContext.Current.Server.MapPath(""), "..", "react-sample-app", "dist"));
 
-            RazorReactConfiguration.AddReactManager(new RazorReactManager(reactBundle, reactBundle, new ChakraCoreJsEngineFactory(), new RazorReactOptions() { LiveReloadDevMode = true }));
+            var reactServerSideBundle = new ReactBundle(null, new[] { @"~/Scripts/react/server/main.bundle.js", @"~/Scripts/react/server/runtime.bundle.js", @"~/Scripts/react/server/vendors~main.bundle.js", });
+            var reactClientSideBundle = new ReactBundle(null, new[] { @"~/Scripts/react/client/main.bundle.js", @"~/Scripts/react/client/runtime.bundle.js", @"~/Scripts/react/client/vendors~main.bundle.js", });
+
+            //RazorReactConfiguration.AddReactManager(new RazorReactManager(reactServerSideBundle, reactClientSideBundle, new ChakraCoreJsEngineFactory(), new RazorReactOptions() { LiveReloadDevMode = true }));
+            RazorReactConfiguration.AddReactManager(new RazorReactManager(reactServerSideBundle, reactClientSideBundle, new V8JsEngineFactory(), new RazorReactOptions() { LiveReloadDevMode = true }));
+
             RazorReactConfiguration.Initialize();
         }
     }

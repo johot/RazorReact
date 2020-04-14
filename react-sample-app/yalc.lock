@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "packages": {
+    "razor-react-bundler": {
+      "signature": "23071a321a2217536b03d48aebd01845",
+      "file": true
+    }
+  }
+}

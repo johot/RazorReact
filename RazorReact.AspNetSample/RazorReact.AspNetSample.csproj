@@ -181,12 +181,6 @@
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Global.asax" />
     <Content Include="Content\Site.css" />
-    <Content Include="ReactScripts\2bdd6db05aca5c28e2ba927507af7a0d.png" />
-    <Content Include="ReactScripts\36527ee9f091079a99b796f22e3c3645.svg" />
-    <Content Include="ReactScripts\b1e0ffbf193e513b90a78649fdc03330.png" />
-    <Content Include="ReactScripts\main.bundle.js" />
-    <Content Include="ReactScripts\runtime.bundle.js" />
-    <Content Include="ReactScripts\vendor.bundle.js" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
     <None Include="Scripts\jquery-3.3.1.intellisense.js" />
