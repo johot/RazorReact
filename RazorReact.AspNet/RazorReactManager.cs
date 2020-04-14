@@ -8,7 +8,7 @@ namespace RazorReact.AspNet
 {
     public class RazorReactManager : RazorReactManagerBase
     {
-        public RazorReactManager(ReactBundle reactBundle, IJsEngineFactory jsEngineFactory, RazorReactOptions options = null) : base(reactBundle, new ServerPathMapper(), jsEngineFactory, options)
+        public RazorReactManager(ReactBundle reactServerSideBundle,ReactBundle reactClientSideBundle, IJsEngineFactory jsEngineFactory, RazorReactOptions options = null) : base(reactServerSideBundle, reactClientSideBundle, new ServerPathMapper(), jsEngineFactory, options)
         {
         }
     }

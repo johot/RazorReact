@@ -4,7 +4,7 @@ namespace RazorReact.Core
 {
     public interface IRazorReactManager
     {
-        ReactBundle ReactBundle { get; }
+        ReactBundle ReactServerSideBundle { get; }
 
         string GetClientSideRenderScripts(string componentName, object props, string bundleId = null, string containerId = null, RazorReactOptions options = null);
         string GetServerSideRenderedHtml(string componentName, object props, string bundleId = null, string containerId = null, RazorReactOptions options = null);

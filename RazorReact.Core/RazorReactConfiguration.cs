@@ -16,7 +16,7 @@ namespace RazorReact.Core
 
         public static IRazorReactManager GetReactBundleManager(string bundleId)
         {
-            var matchingReactManager = ReactManagers.FirstOrDefault(rm => rm.ReactBundle.BundleId == bundleId);
+            var matchingReactManager = ReactManagers.FirstOrDefault(rm => rm.ReactServerSideBundle.BundleId == bundleId);
 
             if (matchingReactManager == null)
             {
